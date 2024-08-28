@@ -7,3 +7,9 @@
 6. implement tabbing
 7. terminal window
 8. global command executer
+9. change font size 
+- [x] fix issue with the frame 
+
+
+
+11. syntax highlighting
