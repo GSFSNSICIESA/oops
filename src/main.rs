@@ -17,29 +17,28 @@ impl eframe::App for MyApp {
         egui::TopBottomPanel::top("my_panel").show(ctx, |ui| {
             use egui::menu;
 
-        menu::bar(ui, |ui| {
-            ui.menu_button("File", |ui| {
-                if ui.button("Open").clicked() {
-                // …
-                }
+            menu::bar(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Open").clicked() {
+                        // …
+                    }
+                });
             });
-        });
-
         });
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                let text_edit = egui::TextEdit::multiline(&mut self.buffer).code_editor().desired_width(f32::INFINITY);
+                let text_edit = egui::TextEdit::multiline(&mut self.buffer)
+                    .code_editor()
+                    .desired_width(f32::INFINITY);
                 let available_size = ui.available_size();
                 ui.add_sized(available_size, text_edit);
             });
-            
         });
     }
 }
 
 // main function
 fn main() {
-
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
         ..Default::default()
@@ -48,8 +47,6 @@ fn main() {
     let _ = eframe::run_native(
         "OOPS",
         options,
-        Box::new(|_cc| {
-            Ok(Box::new(MyApp::default()))
-        }),
+        Box::new(|_cc| Ok(Box::new(MyApp::default()))),
     );
 }
