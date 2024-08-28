@@ -1,4 +1,4 @@
-##TODOs
+## TODOs
 1. side panels to manage files
 2. complete the menu bar
 3. make the menu bar functional
