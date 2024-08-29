@@ -108,7 +108,6 @@ impl eframe::App for OOPS {
     }
 }
 
-// main function
 fn main() {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
