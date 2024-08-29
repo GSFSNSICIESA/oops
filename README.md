@@ -13,3 +13,4 @@
 
 
 11. syntax highlighting
+12. tabs egui
