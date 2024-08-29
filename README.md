@@ -1,4 +1,7 @@
+✨ OOPS: The Outstanding Open-Source Programming Studio ✨ 
+
 ## TODOs
+
 1. side panels to manage files
 2. complete the menu bar
 3. make the menu bar functional
@@ -8,9 +11,9 @@
 7. terminal window
 8. global command executer
 9. change font size 
+10. syntax highlighting
+11. tabs egui
+
+## Done
+
 - [x] fix issue with the frame 
-
-
-
-11. syntax highlighting
-12. tabs egui
