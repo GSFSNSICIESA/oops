@@ -1,15 +1,15 @@
 use std::fs;
 use std::path::PathBuf;
-
 use rfd::FileDialog;
+
 #[derive(Default)]
-struct MyApp {
+struct OOPS {
     buffer: String,
     current_file: PathBuf,
     tmp_buffer: String,
     current_file_is_saved: bool,
 }
-impl MyApp {
+impl OOPS {
     fn new() -> Self {
         Self {
             current_file_is_saved: true,
@@ -17,7 +17,7 @@ impl MyApp {
         }
     }
 }
-impl MyApp {
+impl OOPS {
     fn check_if_changed(&mut self) {
         if (self.tmp_buffer != self.buffer) {
             self.current_file_is_saved = false;
@@ -27,7 +27,7 @@ impl MyApp {
     }
 }
 
-impl eframe::App for MyApp {
+impl eframe::App for OOPS {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("my_panel").show(ctx, |ui| {
             use egui::menu;
@@ -115,5 +115,5 @@ fn main() {
         ..Default::default()
     };
 
-    let _ = eframe::run_native("OOPS", options, Box::new(|_cc| Ok(Box::new(MyApp::new()))));
+    let _ = eframe::run_native("OOPS", options, Box::new(|_cc| Ok(Box::new(OOPS::new()))));
 }
