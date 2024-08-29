@@ -19,7 +19,7 @@ impl OOPS {
 }
 impl OOPS {
     fn check_if_changed(&mut self) {
-        if (self.tmp_buffer != self.buffer) {
+        if self.tmp_buffer != self.buffer {
             self.current_file_is_saved = false;
         } else {
             self.current_file_is_saved = true;
@@ -91,7 +91,7 @@ impl eframe::App for OOPS {
         // });
         egui::SidePanel::left("file navigation").show(ctx, |ui| {});
         egui::SidePanel::right("accessories").show(ctx, |ui| {
-            if (!self.current_file_is_saved) {
+            if !self.current_file_is_saved {
                 ui.label("Save pleeeeeeeaaaaaaaaaase");
             }
         });
