@@ -13,7 +13,8 @@
 9. change font size 
 10. syntax highlighting
 11. tabs egui
-
+12. open more than one file at once
+13. implement autosave feature
 ## Done
 
 - [x] fix issue with the frame 
