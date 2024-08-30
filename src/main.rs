@@ -1,6 +1,6 @@
+use rfd::FileDialog;
 use std::fs;
 use std::path::PathBuf;
-use rfd::FileDialog;
 
 #[derive(Default)]
 struct OOPS {
@@ -8,6 +8,7 @@ struct OOPS {
     current_file: PathBuf,
     tmp_buffer: String,
     current_file_is_saved: bool,
+    current_path: PathBuf,
 }
 impl OOPS {
     fn new() -> Self {
@@ -35,13 +36,16 @@ impl eframe::App for OOPS {
             menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("open").clicked() {
-                        let files = FileDialog::new()
+                        let file = FileDialog::new()
                             .add_filter("text", &["txt", "rs"])
                             .add_filter("rust", &["rs", "toml"])
                             .set_directory("/")
                             .pick_file();
-                        match files {
+                        match file {
                             Some(current_file) => {
+                                let mut tmp_path = current_file.clone();
+                                tmp_path.pop();
+                                self.current_path = tmp_path;
                                 self.current_file = current_file;
                             }
                             None => {}
@@ -89,7 +93,30 @@ impl eframe::App for OOPS {
             }
         });
         // });
-        egui::SidePanel::left("file navigation").show(ctx, |ui| {});
+        egui::SidePanel::left("file navigation").show(ctx, |ui| {
+            if let Ok(files) = fs::read_dir(self.current_path.clone()) {
+                for file in files {
+                    match file {
+                        Ok(file) => {
+                            let label = egui::Label::new(file.file_name().to_str().unwrap())
+                                .sense(egui::Sense::click());
+                            if ui.add(label).clicked() {
+                                self.current_file = file.path();
+                                let contents = fs::read_to_string(self.current_file.clone());
+                                match contents {
+                                    Ok(buffer) => {
+                                        self.buffer = buffer.clone();
+                                        self.tmp_buffer = buffer;
+                                    }
+                                    Err(_) => {}
+                                }
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                }
+            }
+        });
         egui::SidePanel::right("accessories").show(ctx, |ui| {
             if !self.current_file_is_saved {
                 ui.label("Save pleeeeeeeaaaaaaaaaase");
