@@ -1,15 +1,15 @@
 use std::fs;
 use std::path::PathBuf;
-
 use rfd::FileDialog;
+
 #[derive(Default)]
-struct MyApp {
+struct OOPS {
     buffer: String,
     current_file: PathBuf,
     tmp_buffer: String,
     current_file_is_saved: bool,
 }
-impl MyApp {
+impl OOPS {
     fn new() -> Self {
         Self {
             current_file_is_saved: true,
@@ -17,9 +17,9 @@ impl MyApp {
         }
     }
 }
-impl MyApp {
+impl OOPS {
     fn check_if_changed(&mut self) {
-        if (self.tmp_buffer != self.buffer) {
+        if self.tmp_buffer != self.buffer {
             self.current_file_is_saved = false;
         } else {
             self.current_file_is_saved = true;
@@ -27,7 +27,7 @@ impl MyApp {
     }
 }
 
-impl eframe::App for MyApp {
+impl eframe::App for OOPS {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("my_panel").show(ctx, |ui| {
             use egui::menu;
@@ -91,7 +91,7 @@ impl eframe::App for MyApp {
         // });
         egui::SidePanel::left("file navigation").show(ctx, |ui| {});
         egui::SidePanel::right("accessories").show(ctx, |ui| {
-            if (!self.current_file_is_saved) {
+            if !self.current_file_is_saved {
                 ui.label("Save pleeeeeeeaaaaaaaaaase");
             }
         });
@@ -108,12 +108,11 @@ impl eframe::App for MyApp {
     }
 }
 
-// main function
 fn main() {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
         ..Default::default()
     };
 
-    let _ = eframe::run_native("OOPS", options, Box::new(|_cc| Ok(Box::new(MyApp::new()))));
+    let _ = eframe::run_native("OOPS", options, Box::new(|_cc| Ok(Box::new(OOPS::new()))));
 }
