@@ -1,7 +1,7 @@
 use rfd::FileDialog;
+use std::ffi::OsString;
 use std::fs;
 use std::path::PathBuf;
-
 #[derive(Default)]
 struct OOPS {
     buffer: String,
@@ -36,9 +36,7 @@ impl eframe::App for OOPS {
             menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("open").clicked() {
-                        let file = FileDialog::new()
-                            .set_directory("/")
-                            .pick_file();
+                        let file = FileDialog::new().set_directory("/").pick_file();
                         match file {
                             Some(current_file) => {
                                 let mut tmp_path = current_file.clone();
@@ -76,10 +74,7 @@ impl eframe::App for OOPS {
         egui::TopBottomPanel::bottom("status bar").show(ctx, |ui| {
             // ui.with_layout(egui::Layout::centered_and_justified(egui::Direction::BottomUp), |ui| {
 
-            if ui
-                .button("Save file to your computer to get your work not wasted")
-                .clicked()
-            {
+            if ui.button("Save File").clicked() {
                 fs::write(self.current_file.clone(), self.buffer.clone())
                     .expect("Unable to write file");
                 self.tmp_buffer = self.buffer.clone();
@@ -92,30 +87,30 @@ impl eframe::App for OOPS {
         });
         // });
         egui::SidePanel::left("file navigation").show(ctx, |ui| {
-            if let Ok(files) = fs::read_dir(self.current_path.clone()) {
-                for file in files {
-                    // if file is directory
-                    
-                    match file {
-                        Ok(file) => {
-                            let label = egui::Label::new(file.file_name().to_str().unwrap())
-                                .sense(egui::Sense::click());
-                            if ui.add(label).clicked() {
-                                self.current_file = file.path();
-                                let contents = fs::read_to_string(self.current_file.clone());
-                                match contents {
-                                    Ok(buffer) => {
-                                        self.buffer = buffer.clone();
-                                        self.tmp_buffer = buffer;
-                                    }
-                                    Err(_) => {}
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                if let Ok(files) = fs::read_dir(self.current_path.clone()) {
+                    let mut sorted_files: Vec<OsString> =
+                        files.map(|file| file.unwrap().file_name()).collect();
+                    sorted_files.sort();
+                    for file in sorted_files {
+                        // if file is directory
+
+                        let label =
+                            egui::Label::new(file.to_str().unwrap()).sense(egui::Sense::click());
+                        if ui.add(label).clicked() {
+                            self.current_file = PathBuf::from(file);
+                            let contents = fs::read_to_string(self.current_file.clone());
+                            match contents {
+                                Ok(buffer) => {
+                                    self.buffer = buffer.clone();
+                                    self.tmp_buffer = buffer;
                                 }
+                                Err(_) => {}
                             }
                         }
-                        Err(_) => {}
                     }
                 }
-            }
+            });
         });
         egui::SidePanel::right("accessories").show(ctx, |ui| {
             if !self.current_file_is_saved {
