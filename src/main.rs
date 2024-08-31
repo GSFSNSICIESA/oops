@@ -72,20 +72,16 @@ impl eframe::App for OOPS {
         });
 
         egui::TopBottomPanel::bottom("status bar").show(ctx, |ui| {
-            // ui.with_layout(egui::Layout::centered_and_justified(egui::Direction::BottomUp), |ui| {
-
             if ui.button("Save File").clicked() {
-                fs::write(self.current_file.clone(), self.buffer.clone())
-                    .expect("Unable to write file");
-                self.tmp_buffer = self.buffer.clone();
-                self.check_if_changed();
+                if fs::write(self.current_file.clone(), self.buffer.clone()).is_ok() {
+                    self.tmp_buffer = self.buffer.clone();
+                    self.check_if_changed();
+                };
             }
             if ui.button("check if the file is saved").clicked() {
-                // compare buffer with tmp_buffer
                 self.check_if_changed();
             }
         });
-        // });
         egui::SidePanel::left("file navigation").show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 if let Ok(files) = fs::read_dir(self.current_path.clone()) {
@@ -93,8 +89,6 @@ impl eframe::App for OOPS {
                         files.map(|file| file.unwrap().file_name()).collect();
                     sorted_files.sort();
                     for file in sorted_files {
-                        // if file is directory
-
                         let label =
                             egui::Label::new(file.to_str().unwrap()).sense(egui::Sense::click());
                         if ui.add(label).clicked() {
