@@ -37,8 +37,6 @@ impl eframe::App for OOPS {
                 ui.menu_button("File", |ui| {
                     if ui.button("open").clicked() {
                         let file = FileDialog::new()
-                            .add_filter("text", &["txt", "rs"])
-                            .add_filter("rust", &["rs", "toml"])
                             .set_directory("/")
                             .pick_file();
                         match file {
@@ -96,6 +94,8 @@ impl eframe::App for OOPS {
         egui::SidePanel::left("file navigation").show(ctx, |ui| {
             if let Ok(files) = fs::read_dir(self.current_path.clone()) {
                 for file in files {
+                    // if file is directory
+                    
                     match file {
                         Ok(file) => {
                             let label = egui::Label::new(file.file_name().to_str().unwrap())
@@ -119,7 +119,7 @@ impl eframe::App for OOPS {
         });
         egui::SidePanel::right("accessories").show(ctx, |ui| {
             if !self.current_file_is_saved {
-                ui.label("Save pleeeeeeeaaaaaaaaaase");
+                ui.label("⏳");
             }
         });
 
