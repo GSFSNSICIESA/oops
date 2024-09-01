@@ -1,11 +1,14 @@
 use rfd::FileDialog;
 use std::ffi::OsString;
-use std::fs;
+use std::fs::{self, File};
+use std::io::{self, Read};
 use std::path::PathBuf;
+
 #[derive(Default)]
 
 struct OOPS {
     buffer: String,
+    language: String,
     current_file: PathBuf,
     tmp_buffer: String,
     current_file_is_saved: bool,
@@ -22,6 +25,7 @@ impl OOPS {
             left_side_panel_open: true,
             right_side_panel_open: true,
             bottom_panel_open: true,
+            language: "rs".to_owned(),
             ..Default::default()
         }
     }
@@ -32,12 +36,29 @@ impl OOPS {
                 self.check_if_changed();
             };
         } else {
+            // create new file
             self.current_file = PathBuf::from(path);
+            self.language = self
+                .current_file
+                .extension()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string();
             if fs::write(self.current_file.clone(), self.buffer.clone()).is_ok() {
                 self.tmp_buffer = self.buffer.clone();
                 self.check_if_changed();
             };
         }
+    }
+
+    pub fn read_file(path: &str) -> Result<String, io::Error> {
+        let mut file = File::open(path)?;
+        let mut bytes = Vec::new();
+        let _ = file.read_to_end(&mut bytes)?;
+
+        let (result, _, _) = encoding_rs::UTF_8.decode(&bytes);
+        Ok(result.into_owned())
     }
 }
 impl OOPS {
@@ -59,22 +80,20 @@ impl eframe::App for OOPS {
                 ui.menu_button("File", |ui| {
                     if ui.button("open").clicked() {
                         let file = FileDialog::new().set_directory("/").pick_file();
-                        match file {
-                            Some(current_file) => {
-                                let mut tmp_path = current_file.clone();
-                                tmp_path.pop();
-                                self.current_directory = tmp_path;
-                                self.current_file = current_file;
+                        if let Some(current_file) = file {
+                            if let Some(extension) = current_file.extension() {
+                                self.language = extension.to_str().unwrap().to_string();
                             }
-                            None => {}
+                            let mut tmp_path = current_file.clone();
+                            tmp_path.pop();
+                            self.current_directory = tmp_path;
+                            self.current_file = current_file;
                         }
-                        let contents = fs::read_to_string(self.current_file.clone());
-                        match contents {
-                            Ok(buffer) => {
-                                self.buffer = buffer.clone();
-                                self.tmp_buffer = buffer;
-                            }
-                            Err(_) => {}
+                        let path_as_str = self.current_file.as_os_str().to_str().unwrap();
+                        let contents = OOPS::read_file(path_as_str);
+                        if let Ok(buffer) = contents {
+                            self.buffer = buffer.clone();
+                            self.tmp_buffer = buffer;
                         }
                         self.current_file_is_saved = true;
                     }
@@ -138,19 +157,24 @@ impl eframe::App for OOPS {
                         sorted_files.sort();
                         for file in sorted_files {
                             let tmp_path = PathBuf::from(file);
+                            let path_as_str = tmp_path.as_os_str().to_str().unwrap();
 
                             let label =
                                 egui::Label::new(tmp_path.file_name().unwrap().to_str().unwrap())
                                     .sense(egui::Sense::click());
                             if ui.add(label).clicked() {
-                                self.current_file = tmp_path;
-                                let contents = fs::read_to_string(self.current_file.clone());
+                                self.current_file = tmp_path.clone();
+                                self.language =
+                                    tmp_path.extension().unwrap().to_str().unwrap().to_string();
+                                let contents = OOPS::read_file(path_as_str);
                                 match contents {
                                     Ok(buffer) => {
                                         self.buffer = buffer.clone();
                                         self.tmp_buffer = buffer;
                                     }
-                                    Err(_) => {}
+                                    Err(e) => {
+                                        println!("error: {}", e);
+                                    }
                                 }
                             }
                         }
@@ -170,9 +194,29 @@ impl eframe::App for OOPS {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
+                let mut theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
+                ui.collapsing("Theme", |ui| {
+                    ui.group(|ui| {
+                        theme.ui(ui);
+                        theme.clone().store_in_memory(ui.ctx());
+                    });
+                });
+
+                let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
+                    let mut layout_job = egui_extras::syntax_highlighting::highlight(
+                        ui.ctx(),
+                        &theme,
+                        string,
+                        &self.language,
+                    );
+                    layout_job.wrap.max_width = wrap_width;
+                    ui.fonts(|f| f.layout_job(layout_job))
+                };
+
                 let text_edit = egui::TextEdit::multiline(&mut self.buffer)
                     .code_editor()
-                    .frame(false);
+                    .frame(false)
+                    .layouter(&mut layouter);
                 let available_size = ui.available_size();
                 ui.add_sized(available_size, text_edit);
             });

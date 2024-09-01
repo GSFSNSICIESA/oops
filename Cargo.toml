@@ -6,4 +6,6 @@ edition = "2021"
 [dependencies]
 eframe = "0.28.1"
 egui = "0.28.1"
+egui_extras = { version = "0.28.1", features = ["syntect"] }
+encoding_rs = "0.8.34"
 rfd = "0.14.1"
