@@ -3,18 +3,25 @@ use std::ffi::OsString;
 use std::fs;
 use std::path::PathBuf;
 #[derive(Default)]
+
 struct OOPS {
     buffer: String,
     current_file: PathBuf,
     tmp_buffer: String,
     current_file_is_saved: bool,
     current_directory: PathBuf,
+    left_side_panel_open: bool,
+    right_side_panel_open: bool,
+    bottom_panel_open: bool,
 }
 
 impl OOPS {
     fn new() -> Self {
         Self {
             current_file_is_saved: true,
+            left_side_panel_open: true,
+            right_side_panel_open: true,
+            bottom_panel_open: true,
             ..Default::default()
         }
     }
@@ -74,8 +81,19 @@ impl eframe::App for OOPS {
                 });
                 ui.menu_button("Edit", |ui| if ui.button("settings").clicked() {});
                 ui.menu_button("View", |ui| {
-                    if ui.button("hide side panel").clicked() {
-                        // …
+                    if ui.button("zen mode").clicked() {
+                        self.left_side_panel_open = !self.left_side_panel_open;
+                        self.right_side_panel_open = !self.right_side_panel_open;
+                        self.bottom_panel_open = !self.bottom_panel_open;
+                    }
+                    if ui.button("toggle left panel").clicked() {
+                        self.left_side_panel_open = !self.left_side_panel_open;
+                    }
+                    if ui.button("toggle right panel").clicked() {
+                        self.right_side_panel_open = !self.right_side_panel_open;
+                    }
+                    if ui.button("toggle bottom panel").clicked() {
+                        self.bottom_panel_open = !self.bottom_panel_open;
                     }
                 });
                 ui.menu_button("Help", |ui| {
@@ -86,57 +104,69 @@ impl eframe::App for OOPS {
             });
         });
 
-        egui::TopBottomPanel::bottom("status bar").show(ctx, |ui| {
-            if ui.button("Save File").clicked() {
-                if self.current_file.exists() {
-                    self.save_file(self.current_file.to_str().unwrap().to_string());
-                } else {
-                    if let Some(file) = FileDialog::new().set_directory("/").save_file() {
-                        let mut tmp_path = file.clone();
-                        tmp_path.pop();
-                        self.current_directory = tmp_path;
-                        self.current_file = file;
+        egui::TopBottomPanel::bottom("status bar").show_animated(
+            ctx,
+            self.bottom_panel_open,
+            |ui| {
+                if ui.button("Save File").clicked() {
+                    if self.current_file.exists() {
                         self.save_file(self.current_file.to_str().unwrap().to_string());
-                    }
-                }
-            }
-            if ui.button("check if the file is saved").clicked() {
-                self.check_if_changed();
-            }
-        });
-        egui::SidePanel::left("file navigation").show(ctx, |ui| {
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                if let Ok(files) = fs::read_dir(self.current_directory.clone()) {
-                    let mut sorted_files: Vec<OsString> = files
-                        .map(|file| file.unwrap().path().as_os_str().to_os_string())
-                        .collect();
-                    sorted_files.sort();
-                    for file in sorted_files {
-                        let tmp_path = PathBuf::from(file);
-
-                        let label =
-                            egui::Label::new(tmp_path.file_name().unwrap().to_str().unwrap())
-                                .sense(egui::Sense::click());
-                        if ui.add(label).clicked() {
-                            self.current_file = tmp_path;
-                            let contents = fs::read_to_string(self.current_file.clone());
-                            match contents {
-                                Ok(buffer) => {
-                                    self.buffer = buffer.clone();
-                                    self.tmp_buffer = buffer;
-                                }
-                                Err(_) => {}
-                            }
+                    } else {
+                        if let Some(file) = FileDialog::new().set_directory("/").save_file() {
+                            let mut tmp_path = file.clone();
+                            tmp_path.pop();
+                            self.current_directory = tmp_path;
+                            self.current_file = file;
+                            self.save_file(self.current_file.to_str().unwrap().to_string());
                         }
                     }
                 }
-            });
-        });
-        egui::SidePanel::right("accessories").show(ctx, |ui| {
-            if !self.current_file_is_saved {
-                ui.label("⏳");
-            }
-        });
+                if ui.button("check if the file is saved").clicked() {
+                    self.check_if_changed();
+                }
+            },
+        );
+        egui::SidePanel::left("file navigation").show_animated(
+            ctx,
+            self.left_side_panel_open,
+            |ui| {
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    if let Ok(files) = fs::read_dir(self.current_directory.clone()) {
+                        let mut sorted_files: Vec<OsString> = files
+                            .map(|file| file.unwrap().path().as_os_str().to_os_string())
+                            .collect();
+                        sorted_files.sort();
+                        for file in sorted_files {
+                            let tmp_path = PathBuf::from(file);
+
+                            let label =
+                                egui::Label::new(tmp_path.file_name().unwrap().to_str().unwrap())
+                                    .sense(egui::Sense::click());
+                            if ui.add(label).clicked() {
+                                self.current_file = tmp_path;
+                                let contents = fs::read_to_string(self.current_file.clone());
+                                match contents {
+                                    Ok(buffer) => {
+                                        self.buffer = buffer.clone();
+                                        self.tmp_buffer = buffer;
+                                    }
+                                    Err(_) => {}
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+        );
+        egui::SidePanel::right("accessories").show_animated(
+            ctx,
+            self.right_side_panel_open,
+            |ui| {
+                if !self.current_file_is_saved {
+                    ui.label("⏳");
+                }
+            },
+        );
 
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
