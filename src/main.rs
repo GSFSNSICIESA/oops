@@ -1,3 +1,4 @@
+use egui_extras::syntax_highlighting::CodeTheme;
 use rfd::FileDialog;
 use std::fs::{self, File};
 use std::io::{self, Read};
@@ -15,6 +16,8 @@ struct OOPS {
     left_side_panel_open: bool,
     right_side_panel_open: bool,
     bottom_panel_open: bool,
+    settings_window_visible: bool,
+    theme: CodeTheme,
 }
 
 impl OOPS {
@@ -25,6 +28,7 @@ impl OOPS {
             right_side_panel_open: true,
             bottom_panel_open: true,
             language: "rs".to_owned(),
+            theme: CodeTheme::default(),
             ..Default::default()
         }
     }
@@ -94,7 +98,11 @@ impl eframe::App for OOPS {
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("Edit", |ui| if ui.button("settings").clicked() {});
+                ui.menu_button("Edit", |ui| {
+                    if ui.button("settings").clicked() {
+                        self.settings_window_visible = !self.settings_window_visible;
+                    }
+                });
                 ui.menu_button("View", |ui| {
                     if ui.button("zen mode").clicked() {
                         self.left_side_panel_open = !self.left_side_panel_open;
@@ -207,18 +215,10 @@ impl eframe::App for OOPS {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                let mut theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
-                ui.collapsing("Theme", |ui| {
-                    ui.group(|ui| {
-                        theme.ui(ui);
-                        theme.clone().store_in_memory(ui.ctx());
-                    });
-                });
-
                 let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
                     let mut layout_job = egui_extras::syntax_highlighting::highlight(
                         ui.ctx(),
-                        &theme,
+                        &self.theme,
                         string,
                         &self.language,
                     );
@@ -234,6 +234,15 @@ impl eframe::App for OOPS {
                 ui.add_sized(available_size, text_edit);
             });
         });
+
+        egui::Window::new("Settings")
+            .open(&mut self.settings_window_visible)
+            .show(ctx, |ui| {
+                ui.group(|ui| {
+                    self.theme.ui(ui);
+                    self.theme.clone().store_in_memory(ui.ctx());
+                });
+            });
     }
 }
 
