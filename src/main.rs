@@ -1,5 +1,4 @@
 use rfd::FileDialog;
-use std::ffi::OsString;
 use std::fs::{self, File};
 use std::io::{self, Read};
 use std::path::PathBuf;
@@ -63,11 +62,7 @@ impl OOPS {
 }
 impl OOPS {
     fn check_if_changed(&mut self) {
-        if self.tmp_buffer != self.buffer {
-            self.current_file_is_saved = false;
-        } else {
-            self.current_file_is_saved = true;
-        }
+        self.current_file_is_saved = self.tmp_buffer == self.buffer;
     }
 }
 
@@ -130,14 +125,12 @@ impl eframe::App for OOPS {
                 if ui.button("Save File").clicked() {
                     if self.current_file.exists() {
                         self.save_file(self.current_file.to_str().unwrap().to_string());
-                    } else {
-                        if let Some(file) = FileDialog::new().set_directory("/").save_file() {
-                            let mut tmp_path = file.clone();
-                            tmp_path.pop();
-                            self.current_directory = tmp_path;
-                            self.current_file = file;
-                            self.save_file(self.current_file.to_str().unwrap().to_string());
-                        }
+                    } else if let Some(file) = FileDialog::new().set_directory("/").save_file() {
+                        let mut tmp_path = file.clone();
+                        tmp_path.pop();
+                        self.current_directory = tmp_path;
+                        self.current_file = file;
+                        self.save_file(self.current_file.to_str().unwrap().to_string());
                     }
                 }
                 if ui.button("check if the file is saved").clicked() {
@@ -151,21 +144,35 @@ impl eframe::App for OOPS {
             |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     if let Ok(files) = fs::read_dir(self.current_directory.clone()) {
-                        let mut sorted_files: Vec<OsString> = files
-                            .map(|file| file.unwrap().path().as_os_str().to_os_string())
-                            .collect();
-                        sorted_files.sort();
-                        for file in sorted_files {
-                            let tmp_path = PathBuf::from(file);
-                            let path_as_str = tmp_path.as_os_str().to_str().unwrap();
+                        let mut sorted_files: Vec<PathBuf> =
+                            files.map(|file| file.unwrap().path()).collect();
+                        sorted_files.sort_by(|a, b| {
+                            if a.is_dir() != b.is_dir() {
+                                // meaning, if
+                                return b.is_dir().cmp(&a.is_dir());
+                            }
 
-                            let label =
-                                egui::Label::new(tmp_path.file_name().unwrap().to_str().unwrap())
-                                    .sense(egui::Sense::click());
+                            a.as_os_str().cmp(b.as_os_str())
+                        });
+                        for file in sorted_files {
+                            let path_as_str = file.as_os_str().to_str().unwrap();
+
+                            let label: egui::Label = if file.is_dir() {
+                                egui::Label::new(
+                                    egui::RichText::new(
+                                        file.file_name().unwrap().to_str().unwrap(),
+                                    )
+                                    .underline(),
+                                )
+                                .sense(egui::Sense::click())
+                            } else {
+                                egui::Label::new(file.file_name().unwrap().to_str().unwrap())
+                                    .sense(egui::Sense::click())
+                            };
                             if ui.add(label).clicked() {
-                                self.current_file = tmp_path.clone();
+                                self.current_file = file.clone();
                                 self.language =
-                                    tmp_path.extension().unwrap().to_str().unwrap().to_string();
+                                    file.extension().unwrap().to_str().unwrap().to_string();
                                 let contents = OOPS::read_file(path_as_str);
                                 match contents {
                                     Ok(buffer) => {
