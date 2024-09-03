@@ -91,6 +91,7 @@ impl eframe::App for OOPS {
                             self.tmp_buffer = buffer;
                         }
                         self.current_file_is_saved = true;
+                        ui.close_menu();
                     }
                 });
                 ui.menu_button("Edit", |ui| if ui.button("settings").clicked() {});
@@ -99,20 +100,25 @@ impl eframe::App for OOPS {
                         self.left_side_panel_open = !self.left_side_panel_open;
                         self.right_side_panel_open = !self.right_side_panel_open;
                         self.bottom_panel_open = !self.bottom_panel_open;
+                        ui.close_menu();
                     }
                     if ui.button("toggle left panel").clicked() {
                         self.left_side_panel_open = !self.left_side_panel_open;
+                        ui.close_menu();
                     }
                     if ui.button("toggle right panel").clicked() {
                         self.right_side_panel_open = !self.right_side_panel_open;
+                        ui.close_menu();
                     }
                     if ui.button("toggle bottom panel").clicked() {
                         self.bottom_panel_open = !self.bottom_panel_open;
+                        ui.close_menu();
                     }
                 });
                 ui.menu_button("Help", |ui| {
                     if ui.button("open documentation").clicked() {
                         // …
+                        ui.close_menu();
                     }
                 });
             });
