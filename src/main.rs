@@ -10,7 +10,6 @@ struct OOPS {
     buffer: String,
     language: String,
     current_file: PathBuf,
-    tmp_buffer: String,
     current_file_is_saved: bool,
     current_directory: PathBuf,
     left_side_panel_open: bool,
@@ -34,25 +33,24 @@ impl OOPS {
     }
     fn save_file(&mut self, path: String) {
         if path == self.current_file.to_str().unwrap() {
-            if fs::write(self.current_file.clone(), self.buffer.clone()).is_ok() {
-                self.tmp_buffer = self.buffer.clone();
-                self.check_if_changed();
+            let Ok(_) = fs::write(self.current_file.clone(), self.buffer.clone()) else {
+                return;
             };
         } else {
             // create new file
             self.current_file = PathBuf::from(path);
             self.language = self
-                .current_file
-                .extension()
-                .unwrap()
-                .to_str()
-                .unwrap()
+            .current_file
+            .extension()
+            .unwrap()
+            .to_str()
+            .unwrap()
                 .to_string();
-            if fs::write(self.current_file.clone(), self.buffer.clone()).is_ok() {
-                self.tmp_buffer = self.buffer.clone();
-                self.check_if_changed();
+            let Ok(_) = fs::write(self.current_file.clone(), self.buffer.clone()) else {
+                return;
             };
         }
+        self.current_file_is_saved = true;
     }
 
     pub fn read_file(path: &str) -> Result<String, io::Error> {
@@ -62,11 +60,6 @@ impl OOPS {
 
         let (result, _, _) = encoding_rs::UTF_8.decode(&bytes);
         Ok(result.into_owned())
-    }
-}
-impl OOPS {
-    fn check_if_changed(&mut self) {
-        self.current_file_is_saved = self.tmp_buffer == self.buffer;
     }
 }
 
@@ -91,8 +84,7 @@ impl eframe::App for OOPS {
                         let path_as_str = self.current_file.as_os_str().to_str().unwrap();
                         let contents = OOPS::read_file(path_as_str);
                         if let Ok(buffer) = contents {
-                            self.buffer = buffer.clone();
-                            self.tmp_buffer = buffer;
+                            self.buffer = buffer;
                         }
                         self.current_file_is_saved = true;
                         ui.close_menu();
@@ -147,9 +139,6 @@ impl eframe::App for OOPS {
                         self.save_file(self.current_file.to_str().unwrap().to_string());
                     }
                 }
-                if ui.button("check if the file is saved").clicked() {
-                    self.check_if_changed();
-                }
             },
         );
         egui::SidePanel::left("file navigation").show_animated(
@@ -162,7 +151,6 @@ impl eframe::App for OOPS {
                             files.map(|file| file.unwrap().path()).collect();
                         sorted_files.sort_by(|a, b| {
                             if a.is_dir() != b.is_dir() {
-                                // meaning, if
                                 return b.is_dir().cmp(&a.is_dir());
                             }
 
@@ -188,10 +176,10 @@ impl eframe::App for OOPS {
                                 self.language =
                                     file.extension().unwrap().to_str().unwrap().to_string();
                                 let contents = OOPS::read_file(path_as_str);
+                                self.current_file_is_saved = true; // because we just read it from disk
                                 match contents {
                                     Ok(buffer) => {
-                                        self.buffer = buffer.clone();
-                                        self.tmp_buffer = buffer;
+                                        self.buffer = buffer;
                                     }
                                     Err(e) => {
                                         println!("error: {}", e);
