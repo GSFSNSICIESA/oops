@@ -231,7 +231,10 @@ impl eframe::App for OOPS {
                     .frame(false)
                     .layouter(&mut layouter);
                 let available_size = ui.available_size();
-                ui.add_sized(available_size, text_edit);
+                let response = ui.add_sized(available_size, text_edit);
+                if response.changed() {
+                    self.current_file_is_saved = false;
+                }
             });
         });
 
